@@ -1,0 +1,165 @@
+apiVersion: v1
+kind: List
+items:
+  - apiVersion: v1
+    kind: Pod
+    metadata:
+      labels:
+        app: vitess
+        cell: uswest1
+        component: vttablet
+      name: vttablet-uswest1-000000100
+      namespace: default
+    spec:
+      containers:
+      - command:
+        - /bin/bash
+        - -c
+        - 'while [ ! -S /vt/vtdataroot/mysqlctl.sock ]; do echo ''Waiting for control
+          socket to become active''; sleep 1; done; /vt/bin/vttablet -topo_global_root
+          /vitess/global -init_db_name_override vt_messagedb -topo_implementation etcd2
+          -db-config-app-uname vt_app -backup_storage_implementation file -health_check_interval
+          5s -service_map ''grpc-queryservice,grpc-tabletmanager,grpc-updatestream'' -enforce_strict_trans_tables
+          -file_backup_storage_root /vt/ -init_shard -80 -port 15002 -topo_global_server_address
+          http://etcd-cluster-client:2379 -db-config-filtered-charset
+          utf8 -enable_replication_reporter -db-config-repl-charset utf8 -init_tablet_type
+          replica -binlog_use_v3_resharding_mode -alsologtostderr -grpc_port 16002 -db-config-filtered-uname
+          vt_filtered -db-config-repl-uname vt_repl -tablet_hostname $(hostname -i) -log_dir
+          /vt/tmp -tablet-path uswest1-000000100 -init_keyspace messagedb -db-config-app-charset
+          utf8 -db-config-dba-uname vt_dba -db-config-dba-charset utf8 '
+        image: vitess/base
+        imagePullPolicy: Always
+        name: vttablet
+        ports:
+        - containerPort: 15002
+          name: web
+          protocol: TCP
+        - containerPort: 16002
+          name: grpc
+          protocol: TCP
+        stdin: true
+        tty: true
+        volumeMounts:
+        - mountPath: /dev/log
+          name: syslog
+        - mountPath: /etc/ssl/certs
+          name: certs
+          readOnly: true
+        - mountPath: /vt/vtdataroot
+          name: vtdataroot
+      - command:
+        - /bin/bash
+        - -c
+        - '/vt/bin/mysqlctld -mysqlctl_socket /vt/vtdataroot/mysqlctl.sock -log_dir /vt/tmp
+          -tablet_uid 100 -socket_file /vt/vtdataroot/mysqlctl.sock -db-config-dba-uname
+          vt_dba -db-config-dba-charset utf8 -init_db_sql_file /vt/config/init_db.sql
+          -alsologtostderr '
+        env:
+        - name: EXTRA_MY_CNF
+          value: /vt/config/mycnf/master_mysql56.cnf
+        image: vitess/base
+        imagePullPolicy: Always
+        name: mysql
+        stdin: true
+        tty: true
+        volumeMounts:
+        - mountPath: /dev/log
+          name: syslog
+        - mountPath: /etc/ssl/certs
+          name: certs
+          readOnly: true
+        - mountPath: /vt/vtdataroot
+          name: vtdataroot
+      restartPolicy: Always
+      volumes:
+      - hostPath:
+          path: /dev/log
+          type: ""
+        name: syslog
+      - hostPath:
+          path: /etc/ssl/certs
+          type: ""
+        name: certs
+      - emptyDir: {}
+        name: vtdataroot      
+  - apiVersion: v1
+    kind: Pod
+    metadata:
+      labels:
+        app: vitess
+        cell: uswest1
+        component: vttablet
+      name: vttablet-uswest1-000000200
+      namespace: default
+    spec:
+      containers:
+      - command:
+        - /bin/bash
+        - -c
+        - 'while [ ! -S /vt/vtdataroot/mysqlctl.sock ]; do echo ''Waiting for control
+          socket to become active''; sleep 1; done; /vt/bin/vttablet -topo_global_root
+          /vitess/global -init_db_name_override vt_messagedb -topo_implementation etcd2
+          -db-config-app-uname vt_app -backup_storage_implementation file -health_check_interval
+          5s -service_map ''grpc-queryservice,grpc-tabletmanager,grpc-updatestream'' -enforce_strict_trans_tables
+          -file_backup_storage_root /vt/ -init_shard 80- -port 15002 -topo_global_server_address
+          http://etcd-cluster-client:2379 -db-config-filtered-charset
+          utf8 -enable_replication_reporter -db-config-repl-charset utf8 -init_tablet_type
+          replica -binlog_use_v3_resharding_mode -alsologtostderr -grpc_port 16002 -db-config-filtered-uname
+          vt_filtered -db-config-repl-uname vt_repl -tablet_hostname $(hostname -i) -log_dir
+          /vt/tmp -tablet-path uswest1-000000200 -init_keyspace messagedb -db-config-app-charset
+          utf8 -db-config-dba-uname vt_dba -db-config-dba-charset utf8 '
+        image: vitess/base
+        imagePullPolicy: Always
+        name: vttablet
+        ports:
+        - containerPort: 15002
+          name: web
+          protocol: TCP
+        - containerPort: 16002
+          name: grpc
+          protocol: TCP
+        stdin: true
+        tty: true
+        volumeMounts:
+        - mountPath: /dev/log
+          name: syslog
+        - mountPath: /etc/ssl/certs
+          name: certs
+          readOnly: true
+        - mountPath: /vt/vtdataroot
+          name: vtdataroot
+      - command:
+        - /bin/bash
+        - -c
+        - '/vt/bin/mysqlctld -mysqlctl_socket /vt/vtdataroot/mysqlctl.sock -log_dir /vt/tmp
+          -tablet_uid 200 -socket_file /vt/vtdataroot/mysqlctl.sock -db-config-dba-uname
+          vt_dba -db-config-dba-charset utf8 -init_db_sql_file /vt/config/init_db.sql
+          -alsologtostderr '
+        env:
+        - name: EXTRA_MY_CNF
+          value: /vt/config/mycnf/master_mysql56.cnf
+        image: vitess/base
+        imagePullPolicy: Always
+        name: mysql
+        stdin: true
+        tty: true
+        volumeMounts:
+        - mountPath: /dev/log
+          name: syslog
+        - mountPath: /etc/ssl/certs
+          name: certs
+          readOnly: true
+        - mountPath: /vt/vtdataroot
+          name: vtdataroot
+      restartPolicy: Always
+      volumes:
+      - hostPath:
+          path: /dev/log
+          type: ""
+        name: syslog
+      - hostPath:
+          path: /etc/ssl/certs
+          type: ""
+        name: certs
+      - emptyDir: {}
+        name: vtdataroot

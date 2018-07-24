@@ -1,0 +1,90 @@
+---
+apiVersion: v1
+kind: List
+items:
+  - apiVersion: apps/v1
+    kind: ReplicaSet
+    metadata:
+      name: vtgate
+      labels:
+        app: vitess
+        cell: uswest1
+        component: vtgate
+    spec:
+      replicas: 3
+      selector:
+        matchLabels:
+          app: vitess
+          cell: uswest1
+          component: vtgate
+      template:
+        metadata:
+          labels:
+            app: vitess
+            cell: uswest1
+            component: vtgate
+        spec:
+          containers:
+          - command:
+            - /bin/bash
+            - -c
+            - '/vt/bin/vtgate -port 15001 -mysql_server_port 3306 -service_map ''grpc-vtgateservice''
+              -topo_implementation etcd2 -topo_global_root /vitess/global -topo_global_server_address
+              http://etcd-cluster-client:2379 -log_dir /vt/tmp -cells_to_watch uswest1 -tablet_types_to_wait
+              MASTER,REPLICA -mysql_auth_server_static_string ''{ "mysql_user":{"Password":"mysql_password"}
+              }'' -gateway_implementation discoverygateway -cell uswest1 -alsologtostderr
+              -grpc_port 15991 '
+            image: vitess/base
+            imagePullPolicy: Always
+            name: vtgate
+            ports:
+            - containerPort: 15991
+              name: grpc
+              protocol: TCP
+            - containerPort: 3306
+              name: mysql
+              protocol: TCP
+            - containerPort: 15001
+              name: web
+              protocol: TCP
+            stdin: true
+            tty: true
+            volumeMounts:
+            - mountPath: /dev/log
+              name: syslog
+            - mountPath: /etc/ssl/certs
+              name: certs
+              readOnly: true
+          restartPolicy: Always
+          volumes:
+          - hostPath:
+              path: /dev/log
+              type: ""
+            name: syslog
+          - hostPath:
+              path: /etc/ssl/certs
+              type: ""
+            name: certs          
+  - apiVersion: v1
+    kind: Service
+    metadata:
+      name: vtgate
+      namespace: default
+      labels:
+        app: vitess
+        cell: uswest1
+        component: vtgate
+    spec:
+      ports:
+        - name: web
+          port: 15001
+        - name: grpc
+          port: 15991
+        - name: mysql
+          port: 3306
+      type: NodePort
+      selector:
+        app: vitess
+        component: vtgate
+      
+    
